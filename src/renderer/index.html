@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws:"
+    />
+    <title>Usage Tracker</title>
+  </head>
+  <body>
+    <main class="card">
+      <section id="setup" class="hidden">
+        <h1>Usage Tracker</h1>
+        <p class="muted">OpenRouter API key</p>
+        <form id="key-form">
+          <input id="key-input" type="password" placeholder="sk-or-..." autocomplete="off" />
+          <button type="submit">Save</button>
+        </form>
+        <p id="setup-error" class="error"></p>
+        <p class="muted small">Key is stored encrypted via OS keychain.</p>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <header class="row">
+          <h1>Usage</h1>
+          <div class="actions">
+            <button id="refresh-btn" class="icon" title="Refresh">&#8635;</button>
+            <button id="settings-btn" class="icon" title="Change API key">&#9881;</button>
+          </div>
+        </header>
+        <div id="usage-list"></div>
+        <p id="empty" class="muted hidden">No providers configured.</p>
+        <footer class="muted small">
+          <span id="hotkey-hint"></span> &middot; Esc to close
+        </footer>
+      </section>
+    </main>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

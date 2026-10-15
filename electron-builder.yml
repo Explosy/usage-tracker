@@ -1,0 +1,18 @@
+appId: com.usagetracker.app
+productName: Usage Tracker
+directories:
+  output: dist
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: resources/tray.png
+    to: tray.png
+win:
+  icon: resources/icon.ico
+  target: nsis
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  shortcutName: Usage Tracker
