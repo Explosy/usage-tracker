@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - 'release/**'
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-installer:
+    # Self-hosted CachyOS host, second runner instance registered for this
+    # repo (the existing one is scoped to lead-aid and cannot be shared on
+    # a personal account). Wine lives on the host; the `wine` label marks it.
+    runs-on: [self-hosted, linux, wine]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight
+        shell: bash
+        run: bash scripts/preflight-runner.sh
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            if npm ci; then exit 0; fi
+            echo "::warning::npm ci failed (attempt $i/3) - retrying after 10s"
+            sleep 10
+          done
+          echo "::error::npm ci failed after 3 attempts"
+          exit 1
+
+      - run: npm run typecheck
+
+      # The tag is the source of truth for the shipped version: v1.2.3
+      # produces "Usage Tracker Setup 1.2.3.exe" regardless of what
+      # package.json says in the tagged commit.
+      - name: Sync version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm version --no-git-tag-version "${GITHUB_REF_NAME#v}"
+
+      - name: Build installer
+        run: npm run dist
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: usage-tracker-windows-${{ github.ref_name }}
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest*.yml
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest*.yml
+
+      # Self-hosted runner is a persistent box: leave nothing behind.
+      - name: Cleanup build artifacts
+        if: always()
+        shell: bash
+        run: rm -rf dist/ out/
